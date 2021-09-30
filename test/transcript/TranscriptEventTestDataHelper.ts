@@ -4,6 +4,7 @@
 import {
   SdkTranscript,
   SdkTranscriptAlternative,
+  SdkTranscriptEntity,
   SdkTranscriptEvent,
   SdkTranscriptFrame,
   SdkTranscriptionStatus,
@@ -26,17 +27,20 @@ export const TRANSCRIPT_EVENT_TEST_VECTORS = {
     'CisKKQgBENKF2MwEGgt0ZXN0LXJlZ2lvbiISdGVzdC1jb25maWd1cmF0aW9uCisKKQgCENKF2MwEGgt0ZXN0LXJlZ2lvbiISdGVzdC1jb25maWd1cmF0aW9uCisKKQgDENKF2MwEGgt0ZXN0LXJlZ2lvbiISdGVzdC1jb25maWd1cmF0aW9uCisKKQgEENKF2MwEGgt0ZXN0LXJlZ2lvbiISdGVzdC1jb25maWd1cmF0aW9uCisKKQgFENKF2MwEGgt0ZXN0LXJlZ2lvbiISdGVzdC1jb25maWd1cmF0aW9u'
   ),
   TRANSCRIPT_SINGLE: decode(
-    'Cp0BEpoBCpcBCpQBCkcKBFRlc3QQ+eS4xbAvGhNzcGVha2VyLWF0dGVuZGVlLWlkIhhzcGVha2VyLWV4dGVybmFsLXVzZXItaWQoo924xbAvMAE4AQpCCgEuEIvluMWwLxoTc3BlYWtlci1hdHRlbmRlZS1pZCIYc3BlYWtlci1leHRlcm5hbC11c2VyLWlkKIrluMWwLzACEgVUZXN0Lg=='
+    'Cp0BEpoBCpcBCpQBCkcKBFRlc3QQrufensUvGhNzcGVha2VyLWF0dGVuZGVlLWlkIhhzcGVha2VyLWV4dGVybmFsLXVzZXItaWQo2N/ensUvMAE4AQpCCgEuEMDn3p7FLxoTc3BlYWtlci1hdHRlbmRlZS1pZCIYc3BlYWtlci1leHRlcm5hbC11c2VyLWlkKL/n3p7FLzACEgVUZXN0Lg=='
   ),
   TRANSCRIPT_MIXED: decode(
     'CisKKQgBENKF2MwEGgt0ZXN0LXJlZ2lvbiISdGVzdC1jb25maWd1cmF0aW9uCp0BEpoBCpcBCpQBCkcKBFRlc3QQ++S4xbAvGhNzcGVha2VyLWF0dGVuZGVlLWlkIhhzcGVha2VyLWV4dGVybmFsLXVzZXItaWQopd24xbAvMAE4AQpCCgEuEI3luMWwLxoTc3BlYWtlci1hdHRlbmRlZS1pZCIYc3BlYWtlci1leHRlcm5hbC11c2VyLWlkKIzluMWwLzACEgVUZXN0Lg=='
+  ),
+  TRANSCRIPT_ENTITY: decode(
+    'CuMCEuACCt0CCtoCClIKBFRlc3QQ+uDn3sUvGhNzcGVha2VyLWF0dGVuZGVlLWlkIhhzcGVha2VyLWV4dGVybmFsLXVzZXItaWQopNnn3sUvMAE4AUEAAAAAAADwP0gBCkQKAS4QjOHn3sUvGhNzcGVha2VyLWF0dGVuZGVlLWlkIhhzcGVha2VyLWV4dGVybmFsLXVzZXItaWQoi+Hn3sUvMAJIAApECgEuEIzh597FLxoUc3BlYWtlci1hdHRlbmRlZS1pZDEiGXNwZWFrZXItZXh0ZXJuYWwtdXNlci1pZDEoiuHn3sUvMAESBVRlc3QuGjwKA1BJSREAAAAAAADwPxoVQ29udGVudCBpcyBhIFBJSSBkYXRhIIvh597FLyiM4efexS8yB0FkZHJlc3MaMwoDUElJEQAAAAAAAPA/GhVDb250ZW50IGlzIGEgUElJIGRhdGEgi+Hn3sUvKIzh597FLw=='
   ),
 };
 
 // Helper functions to generate base64 encoded test input
 export function logBase64FromUint8Array(data: Uint8Array): string {
   const base64Str = Buffer.from(data).toString('base64');
-  // console.log(base64Str);  // uncomment when re-generating the data
+  // console.log(base64Str); // uncomment when re-generating the data
   return base64Str;
 }
 
@@ -83,6 +87,8 @@ export function makeSdkTranscript(): SdkTranscriptEvent {
   item1.startTime = Date.now() - 1000;
   item1.endTime = Date.now() - 18;
   item1.vocabularyFilterMatch = true;
+  item1.confidence = 1;
+  item1.stable = true;
 
   const item2 = SdkTranscriptItem.create();
   item2.content = '.';
@@ -93,7 +99,81 @@ export function makeSdkTranscript(): SdkTranscriptEvent {
   item2.endTime = Date.now();
 
   alternative.items = [item1, item2];
+  const entity1 = SdkTranscriptEntity.create();
+  entity1.category = 'PII';
+  entity1.confidence = 1.0;
+  entity1.content = 'Content is a PII data';
+  entity1.startTime = Date.now();
+  entity1.endTime = Date.now() - 1;
+  entity1.type = 'Address';
+
+  const entity2 = SdkTranscriptEntity.create();
+  entity2.category = 'PII';
+  entity2.confidence = 1.0;
+  entity2.content = 'Content is a PII data';
+  entity2.startTime = Date.now();
+  entity2.endTime = Date.now() - 1;
+
   alternative.transcript = 'Test.';
+  alternative.entities = [entity1, entity2];
+  result.alternatives = [alternative];
+  transcript.results = [result];
+  event.transcript = transcript;
+
+  return event;
+}
+
+export function makeSdkTranscriptWithEntities(): SdkTranscriptEvent {
+  const event = SdkTranscriptEvent.create();
+  const transcript = SdkTranscript.create();
+  const result = SdkTranscriptResult.create();
+  const alternative = SdkTranscriptAlternative.create();
+  const item1 = SdkTranscriptItem.create();
+  item1.content = 'Test';
+  item1.type = SdkTranscriptItem.Type.PRONUNCIATION;
+  item1.speakerAttendeeId = 'speaker-attendee-id';
+  item1.speakerExternalUserId = 'speaker-external-user-id';
+  item1.startTime = Date.now() - 1000;
+  item1.endTime = Date.now() - 18;
+  item1.vocabularyFilterMatch = true;
+  item1.confidence = 1;
+  item1.stable = true;
+
+  const item2 = SdkTranscriptItem.create();
+  item2.content = '.';
+  item2.type = SdkTranscriptItem.Type.PUNCTUATION;
+  item2.speakerAttendeeId = 'speaker-attendee-id';
+  item2.speakerExternalUserId = 'speaker-external-user-id';
+  item2.startTime = Date.now() - 1;
+  item2.endTime = Date.now();
+  item2.stable = false;
+
+  const item3 = SdkTranscriptItem.create();
+  item3.content = '.';
+  item3.type = SdkTranscriptItem.Type.PRONUNCIATION;
+  item3.speakerAttendeeId = 'speaker-attendee-id1';
+  item3.speakerExternalUserId = 'speaker-external-user-id1';
+  item3.startTime = Date.now() - 2;
+  item3.endTime = Date.now();
+
+  alternative.items = [item1, item2, item3];
+  const entity1 = SdkTranscriptEntity.create();
+  entity1.category = 'PII';
+  entity1.confidence = 1.0;
+  entity1.content = 'Content is a PII data';
+  entity1.startTime = Date.now();
+  entity1.endTime = Date.now() - 1;
+  entity1.type = 'Address';
+
+  const entity2 = SdkTranscriptEntity.create();
+  entity2.category = 'PII';
+  entity2.confidence = 1.0;
+  entity2.content = 'Content is a PII data';
+  entity2.startTime = Date.now();
+  entity2.endTime = Date.now() - 1;
+
+  alternative.transcript = 'Test.';
+  alternative.entities = [entity1, entity2];
   result.alternatives = [alternative];
   transcript.results = [result];
   event.transcript = transcript;

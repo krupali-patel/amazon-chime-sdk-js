@@ -396,6 +396,49 @@
           </select>
         </div>
       </div>
+      <div id="engine-transcribe-stability">
+        <div id="engine-transcribe-partial-stabilization" class="custom-control custom-checkbox" style="text-align: left;">
+          <input type="checkbox" id="partialstabilization" class="custom-control-input">
+          <label for="partialstabilization" class="custom-control-label">Enable Partial Results Stabilization</label>
+        </div>
+        <div id="transcribe-partial-stability" class="hidden">
+          <label for="partial-stability" class="sr-only">Transcribe Entities</label>
+          <select id="partial-stability" class="custom-select"  style="width:100%">
+            <option value="" selected>--optional--</option>
+            <option value="low">LOW</option>
+            <option value="medium">MEDIUM</option>
+            <option value="high">HIGH</option>
+          </select>
+        </div>
+      </div>
+      <div id='engine-transcribe-content-identification' class="custom-control custom-checkbox" style="text-align: left;">
+        <input type="checkbox" id="contentidentification" class="custom-control-input">
+        <label for="contentidentification" class="custom-control-label">Use Content Identification</label>
+      </div>
+      <div id='engine-transcribe-medical-content-identification' class="custom-control custom-checkbox hidden" style="text-align: left;">
+        <input type="checkbox" id="medicalcontentidentification" class="custom-control-input">
+        <label for="medicalcontentidentification" class="custom-control-label">Use Content Identification</label>
+      </div>
+      <div id="engine-transcribe-redaction" class="custom-control custom-checkbox" style="text-align: left;">
+        <input type="checkbox" id="contentredaction" class="custom-control-input">
+        <label for="contentredaction" class="custom-control-label">Use Content Redaction</label>
+      </div>
+      <div id="transcribe-entity-types" class="hidden">
+        <label for="transcribe-entity" class="sr-only">Transcribe Entities</label>
+        <select id="transcribe-entity" class="custom-select"  style="width:100%" multiple>
+          <option selected value> -- optional -- </option>
+          <option value="BANK_ROUTING">BANK ROUTING</option>
+          <option value="CREDIT_DEBIT_NUMBER">CREDIT/DEBIT NUMBER</option>
+          <option value="CREDIT_DEBIT_CVV">CREDIT/DEBIT CVV</option>
+          <option value="CREDIT_DEBIT_EXPIRY">CREDIT/DEBIT EXPIRTY</option>
+          <option value="PIN">PIN</option>
+          <option value="EMAIL">EMAIL</option>
+          <option value="ADDRESS">ADDRESS</option>
+          <option value="NAME">NAME</option>
+          <option value="PHONE">PHONE</option>
+          <option value="SSN">SSN</option>
+        </select>
+      </div>
       <button id="button-start-transcription" type="button" class="btn btn-success mx-1 mx-xl-2 my-2" title="Start" data-toggle="button" aria-pressed="false" autocomplete="off">
         <%= require('../../node_modules/open-iconic/svg/caret-right.svg') %>
       </button>
