@@ -44,7 +44,7 @@ function serve(host = '127.0.0.1:8080') {
     log(`${request.method} ${request.url} BEGIN`);
     try {
       // Enable HTTP compression
-      compression({})(request, response, () => {});
+      compression({})(request, response, () => { });
       const requestUrl = url.parse(request.url, true);
       if (request.method === 'GET' && requestUrl.pathname === '/') {
         // Return the contents of the index page
@@ -145,6 +145,9 @@ function serve(host = '127.0.0.1:8080') {
         const languageCode = requestUrl.query.language;
         const region = requestUrl.query.region;
         let transcriptionConfiguration = {};
+        const transcriptEntities = JSON.parse(requestUrl.query.transcriptEntities);
+        const contentIdentification = requestUrl.query.contentIdentification;
+        const entityType = requestUrl.query.entityType;
         if (requestUrl.query.engine === 'transcribe') {
           transcriptionConfiguration = {
             EngineTranscribeSettings: {
@@ -153,6 +156,21 @@ function serve(host = '127.0.0.1:8080') {
           };
           if (region) {
             transcriptionConfiguration.EngineTranscribeSettings.Region = region;
+          }
+          if (transcriptEntities.hasOwnProperty('contentIdentificationType')) {
+            transcriptionConfiguration.EngineTranscribeSettings.ContentIdentificationType = transcriptEntities.contentIdentificationType;
+          }
+          if (transcriptEntities.hasOwnProperty('contentRedactionType')) {
+            transcriptionConfiguration.EngineTranscribeSettings.ContentRedactionType = transcriptEntities.contentRedactionType;
+          }
+          if (transcriptEntities.hasOwnProperty('enablePartialResultsStability')) {
+            transcriptionConfiguration.EngineTranscribeSettings.EnablePartialResultsStabilization = transcriptEntities.enablePartialResultsStability;
+          }
+          if (transcriptEntities.hasOwnProperty('partialStabilityFactor')) {
+            transcriptionConfiguration.EngineTranscribeSettings.PartialResultsStability = transcriptEntities.partialStabilityFactor;
+          }
+          if (transcriptEntities.hasOwnProperty('entityType')) {
+            transcriptionConfiguration.EngineTranscribeSettings.PiiEntityTypes = transcriptEntities.entityType;
           }
         } else if (requestUrl.query.engine === 'transcribe_medical') {
           transcriptionConfiguration = {
@@ -164,6 +182,9 @@ function serve(host = '127.0.0.1:8080') {
           };
           if (region) {
             transcriptionConfiguration.EngineTranscribeMedicalSettings.Region = region;
+          }
+          if (transcriptEntities.hasOwnProperty('contentIdentificationType')) {
+            transcriptionConfiguration.EngineTranscribeMedicalSettings.ContentIdentificationType = transcriptEntities.contentIdentificationType;
           }
         } else {
           return response(400, 'application/json', JSON.stringify({
@@ -190,7 +211,7 @@ function serve(host = '127.0.0.1:8080') {
         respond(response, 200, 'application/json', JSON.stringify(awsCredentials), true);
       } else if (request.method === 'GET' && requestUrl.pathname === '/audio_file') {
         const filePath = 'dist/speech.mp3';
-        fs.readFile(filePath, {encoding: 'base64'}, function(err, data) {
+        fs.readFile(filePath, { encoding: 'base64' }, function (err, data) {
           if (err) {
             log(`Error reading audio file ${filePath}: ${err}`)
             respond(response, 404, 'application/json', JSON.stringify({}));

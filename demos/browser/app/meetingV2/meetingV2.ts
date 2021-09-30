@@ -423,6 +423,14 @@ interface TranscriptSegment {
   endTimeMs: number;
 }
 
+interface TranscriptEntity {
+  contentIdentificationType?: string;
+  contentRedactionType?: string;
+  enablePartialResultsStability?: boolean;
+  partialStabilityFactor?: string;
+  entityType?: string;
+}
+
 export class DemoMeetingApp
   implements AudioVideoObserver, DeviceChangeObserver, ContentShareObserver, VideoDownlinkObserver {
   static readonly DID: string = '+17035550122';
@@ -576,6 +584,7 @@ export class DemoMeetingApp
   partialTranscriptDiv: HTMLDivElement | undefined;
   partialTranscriptResultTimeMap = new Map<string, number>();
   partialTranscriptResultMap = new Map<string, TranscriptResult>();
+  transcriptEntitySet = new Set<string>();
 
   addFatalHandlers(): void {
     fatal = this.fatal.bind(this);
@@ -1211,30 +1220,91 @@ export class DemoMeetingApp
 		    document.getElementById('engine-transcribe-medical-language').classList.toggle('hidden', engineTranscribeChecked);
         document.getElementById('engine-transcribe-region').classList.toggle('hidden', !engineTranscribeChecked);
         document.getElementById('engine-transcribe-medical-region').classList.toggle('hidden', engineTranscribeChecked);
+        document.getElementById('engine-transcribe-medical-content-identification').classList.toggle('hidden', engineTranscribeChecked);
+        document.getElementById('engine-transcribe-content-identification').classList.toggle('hidden', !engineTranscribeChecked);
+        document.getElementById('engine-transcribe-redaction').classList.toggle('hidden', !engineTranscribeChecked);
+        document.getElementById('engine-transcribe-partial-stabilization').classList.toggle('hidden', !engineTranscribeChecked);
+        document.getElementById('transcribe-entity-types').classList.toggle('hidden', !engineTranscribeChecked);
       });
     });
+
+    const contentidentificationCb = document.getElementById('contentidentification') as HTMLInputElement;
+    contentidentificationCb.addEventListener('click', () => {
+      (document.getElementById('contentredaction') as HTMLInputElement).disabled = contentidentificationCb.checked;
+      (document.getElementById('transcribe-entity-types') as HTMLInputElement).classList.toggle('hidden', !contentidentificationCb.checked);
+    })
+
+    const contentRedactionCb = document.getElementById('contentredaction') as HTMLInputElement;
+    contentRedactionCb.addEventListener('click', () => {
+      (document.getElementById('contentidentification') as HTMLInputElement).disabled = contentRedactionCb.checked;
+      (document.getElementById('transcribe-entity-types') as HTMLInputElement).classList.toggle('hidden', !contentRedactionCb.checked);
+    })
+
+    const partialResultsStabilityCb = document.getElementById('partialstabilization') as HTMLInputElement;
+    partialResultsStabilityCb.addEventListener('click', () => {
+      (document.getElementById('transcribe-partial-stability').classList.toggle('hidden', !partialResultsStabilityCb.checked));
+    })
 
     const buttonStartTranscription = document.getElementById('button-start-transcription');
     buttonStartTranscription.addEventListener('click', async () => {
       let engine = '';
       let languageCode = '';
       let region = '';
+      let contentIdentification = false;
+      let contentRedaction = false;
+      let partialStabilization = false;
+      let partialStabilityFactor = '';
+      const transcriptEntities:TranscriptEntity = {};
       if ((document.getElementById('engine-transcribe') as HTMLInputElement).checked) {
         engine = 'transcribe';
         languageCode = (document.getElementById('transcribe-language') as HTMLInputElement).value;
         region = (document.getElementById('transcribe-region') as HTMLInputElement).value;
+        contentIdentification = (document.getElementById('contentidentification') as HTMLInputElement).checked;
+        if (contentIdentification) {
+          transcriptEntities.contentIdentificationType = "PII";
+        }
+        contentRedaction = (document.getElementById('contentredaction') as HTMLInputElement).checked;
+        if (contentRedaction) {
+          transcriptEntities.contentRedactionType = "PII";
+        }
+        partialStabilization = (document.getElementById('partialstabilization') as HTMLInputElement).checked;
+        if (partialStabilization) {
+          transcriptEntities.enablePartialResultsStability = partialStabilization;
+        }
+        partialStabilityFactor = (document.getElementById('partial-stability') as HTMLInputElement).value;
+        if (partialStabilityFactor) {
+          transcriptEntities.partialStabilityFactor = partialStabilityFactor;
+        }
+        if (contentIdentification || contentRedaction) {
+          const selected = document.querySelectorAll('#transcribe-entity option:checked');
+          let values = '';
+          if (selected.length > 0) {
+            values = Array.from(selected).map(el => (el as HTMLInputElement).value).join(',');
+            if (values.startsWith(',')) {
+              values = values.substr(1);
+            }
+          } 
+          if (values !== '') {
+            transcriptEntities.entityType = values;
+          }
+        }
       } else if ((document.getElementById('engine-transcribe-medical') as HTMLInputElement).checked) {
         engine = 'transcribe_medical';
         languageCode = (document.getElementById('transcribe-medical-language') as HTMLInputElement).value;
         region = (document.getElementById('transcribe-medical-region') as HTMLInputElement).value;
+        contentIdentification = (document.getElementById('medicalcontentidentification') as HTMLInputElement).checked;
+        if (contentIdentification) {
+          transcriptEntities.contentIdentificationType = "PHI";
+        }
       } else {
         throw new Error('Unknown transcription engine');
       }
-      await startLiveTranscription(engine, languageCode, region);
+      await startLiveTranscription(engine, languageCode, region, transcriptEntities);
     });
 
-    const startLiveTranscription = async (engine: string, languageCode: string, region: string) => {
-      const response = await fetch(`${DemoMeetingApp.BASE_URL}start_transcription?title=${encodeURIComponent(this.meeting)}&engine=${encodeURIComponent(engine)}&language=${encodeURIComponent(languageCode)}&region=${encodeURIComponent(region)}`, {
+    const startLiveTranscription = async (engine: string, languageCode: string, region: string, transcriptEntities : TranscriptEntity) => {
+      const transcriptEntity = JSON.stringify(transcriptEntities);
+      const response = await fetch(`${DemoMeetingApp.BASE_URL}start_transcription?title=${encodeURIComponent(this.meeting)}&engine=${encodeURIComponent(engine)}&language=${encodeURIComponent(languageCode)}&region=${encodeURIComponent(region)}&transcriptEntities=${encodeURIComponent(transcriptEntity)}`, {
         method: 'POST',
       });
       const json = await response.json();
@@ -2077,7 +2147,18 @@ export class DemoMeetingApp
       for (const result of transcriptEvent.results) {
         const resultId = result.resultId;
         const isPartial = result.isPartial;
-
+        if (!isPartial) {
+          if (result.alternatives[0].entities?.length > 0) {
+              for(const entity of result.alternatives[0].entities) {
+                //split the entity based on space
+                let contentArray = entity.content.split(" ");
+                for(const content of contentArray) {
+                  this.transcriptEntitySet.add(content);
+                }
+              }
+          }
+          
+        }
         this.partialTranscriptResultMap.set(resultId, result);
         this.partialTranscriptResultTimeMap.set(resultId, result.endTimeMs);
         this.renderPartialTranscriptResults();
@@ -2096,7 +2177,7 @@ export class DemoMeetingApp
         }
 
         this.partialTranscriptResultTimeMap.delete(resultId);
-
+        this.transcriptEntitySet.clear();
         if (this.partialTranscriptResultTimeMap.size === 0) {
           // No more partial results in current batch, reset current batch
           this.partialTranscriptDiv = null;
@@ -2142,7 +2223,7 @@ export class DemoMeetingApp
           this.appendNewSpeakerTranscriptDiv(segment, speakerToTranscriptSpanMap);
         } else {
           const transcriptSpan = speakerToTranscriptSpanMap.get(newSpeakerId);
-          transcriptSpan.innerText = transcriptSpan.innerText + '\u00a0' + segment.content;
+          transcriptSpan.innerHTML = transcriptSpan.innerHTML + '\u00a0' + segment.content;
         }
       }
     }
@@ -2153,6 +2234,13 @@ export class DemoMeetingApp
     let content = '';
     let attendee: Attendee = null;
     for (const item of result.alternatives[0].items) {
+      if (item.hasOwnProperty('confidence') && item.confidence < 0.5) {
+        item.content = "<span class='confidence-style'>" + item.content + "</span>"
+      }
+      if (this.transcriptEntitySet.size > 0 && this.transcriptEntitySet.has(item.content)) {
+        item.content = "<span class='entity-color'>" + item.content + "</span>"
+      }
+      
       if (!startTimeMs) {
         content = item.content;
         attendee = item.attendee;
@@ -2202,7 +2290,7 @@ export class DemoMeetingApp
 
     const transcriptSpan = document.createElement('span') as HTMLSpanElement;
     transcriptSpan.classList.add('transcript-content');
-    transcriptSpan.innerText = segment.content;
+    transcriptSpan.innerHTML = segment.content;
     speakerTranscriptDiv.appendChild(transcriptSpan);
 
     this.partialTranscriptDiv.appendChild(speakerTranscriptDiv);
