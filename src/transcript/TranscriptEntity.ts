@@ -5,7 +5,7 @@ export default class TranscriptEntity {
   category: string;
   confidence: number;
   content: string;
-  endTime: number;
-  startTime: number;
+  endTimeMs: number;
+  startTimeMs: number;
   type?: string;
 }

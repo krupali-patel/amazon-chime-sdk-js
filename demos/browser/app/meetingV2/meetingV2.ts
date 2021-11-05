@@ -429,6 +429,7 @@ interface TranscriptEntity {
   enablePartialResultsStability?: boolean;
   partialStabilityFactor?: string;
   entityType?: string;
+  languageModel?: string;
 }
 
 export class DemoMeetingApp
@@ -1224,7 +1225,7 @@ export class DemoMeetingApp
         document.getElementById('engine-transcribe-content-identification').classList.toggle('hidden', !engineTranscribeChecked);
         document.getElementById('engine-transcribe-redaction').classList.toggle('hidden', !engineTranscribeChecked);
         document.getElementById('engine-transcribe-partial-stabilization').classList.toggle('hidden', !engineTranscribeChecked);
-        document.getElementById('transcribe-entity-types').classList.toggle('hidden', !engineTranscribeChecked);
+        document.getElementById('engine-transcribe-language-model').classList.toggle('hidden', !engineTranscribeChecked);
       });
     });
 
@@ -1254,6 +1255,7 @@ export class DemoMeetingApp
       let contentRedaction = false;
       let partialStabilization = false;
       let partialStabilityFactor = '';
+      let languageModel = '';
       const transcriptEntities:TranscriptEntity = {};
       if ((document.getElementById('engine-transcribe') as HTMLInputElement).checked) {
         engine = 'transcribe';
@@ -1287,6 +1289,10 @@ export class DemoMeetingApp
           if (values !== '') {
             transcriptEntities.entityType = values;
           }
+        }
+        languageModel = (document.getElementById('languagemodel') as HTMLInputElement).value;
+        if (languageModel) {
+          transcriptEntities.languageModel = languageModel;
         }
       } else if ((document.getElementById('engine-transcribe-medical') as HTMLInputElement).checked) {
         engine = 'transcribe_medical';

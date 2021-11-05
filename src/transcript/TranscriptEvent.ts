@@ -124,8 +124,8 @@ export class TranscriptEventConverter {
                 category: entity.category,
                 confidence: entity.confidence,
                 content: entity.content,
-                startTime: entity.startTime as number,
-                endTime: entity.endTime as number,
+                startTimeMs: entity.startTime as number,
+                endTimeMs: entity.endTime as number,
               };
 
               if (entity.type) {

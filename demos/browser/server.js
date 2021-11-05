@@ -172,6 +172,9 @@ function serve(host = '127.0.0.1:8080') {
           if (transcriptEntities.hasOwnProperty('entityType')) {
             transcriptionConfiguration.EngineTranscribeSettings.PiiEntityTypes = transcriptEntities.entityType;
           }
+          if (transcriptEntities.hasOwnProperty('languageModel')) {
+            transcriptionConfiguration.EngineTranscribeSettings.LanguageModelName = transcriptEntities.languageModel;
+          }
         } else if (requestUrl.query.engine === 'transcribe_medical') {
           transcriptionConfiguration = {
             EngineTranscribeMedicalSettings: {
